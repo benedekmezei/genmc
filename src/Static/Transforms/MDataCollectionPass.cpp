@@ -42,20 +42,13 @@
  void collectVarName(Module &M, unsigned int ptr, Type *typ, DIType *dit, std::string nameBuilder,
 			 NameInfo &info)
  {	
-	//  printf("Module: \n");
-	//  M.dump();
-	//  printf("dit:\n");
-	//  dit->dump();
 	 if (!isa<StructType>(typ) && !isa<ArrayType>(typ) && !isa<VectorType>(typ)) {
-		//  printf("not complex?\n");
 		 info.addOffsetInfo(ptr, nameBuilder);
 		 return;
 	 }
  
 	 unsigned int offset = 0;
 	 if (auto *AT = dyn_cast<ArrayType>(typ)) {
-		//  printf("arraytype\n");
-		//  dit->dump();
 		 auto *newDit = dit;
 		 if (auto *dict = dyn_cast<DICompositeType>(dit)) {
 			 newDit = (!dict->getBaseType())
@@ -70,31 +63,20 @@
 		 }
 	 } else if (auto *ST = dyn_cast<StructType>(typ)) {
 		 DINodeArray dictElems;
-		//  printf("st:\n");
-		//  ST->dump();
  
 		 /* Since this is a struct type, the metadata should yield a
 		  * composite type, or a derived type that will eventually
 		  * yield a composite type. */
 		 if (auto *dict = dyn_cast<DICompositeType>(dit)) {
-			//  printf("dicompositetype\n");
 			 dictElems = dict->getElements();
 		 }
 		 if (auto *dict = dyn_cast<DIDerivedType>(dit)) {
-			//  printf("dict:\n");
-			//  dict->dump();
 			 DIType *dbt = dict;
 			 while (auto *dbtc = dyn_cast<DIDerivedType>(dbt)){
-				//  printf("dbtc:\n");
-				//  dbtc->dump();
 				 dbt = dyn_cast<DIType>(dbtc->getBaseType());
-				//  printf("dbt:\n");
-				//  dbt->dump();
 			 }
 			 if (auto *dbtc = dyn_cast<DICompositeType>(dbt)){
 				 dictElems = dbtc->getElements();
-				//  printf("dictelems:\n");
-				//  dictElems->dump();
 			 }
 			 else {
 				 /* Take some precautions, in case we got this
@@ -108,13 +90,10 @@
 		 /* It can be dictElems.size() < ST->getNumElements(), e.g., for va_arg */
 		 auto i = 0u;
 		 auto itIncCount = 0u;
-		//  printf("stElemCt: %i", ST->getNumElements());
 		 auto minSize = std::min(dictElems.size(), ST->getNumElements());
 		 for (auto it = ST->element_begin(); itIncCount < minSize; ++it, ++i, ++itIncCount) {
 			 auto elemSize = M.getDataLayout().getTypeAllocSize(*it);
 			 auto didt = dictElems[i];
-			//  printf("didt:\n");
-			//  didt->dump();
 			 while (true){
 				auto newDit = dyn_cast<DIDerivedType>(didt);
 				if (!newDit) break;
@@ -126,18 +105,11 @@
 				if (!(newDit->getExtraData() && newDit->getFlags() & (1 << 12))) break;
 
 				// this is likely a static constexpr member of a class, which wasn't compiled into typ, so we can ignore it
-				// printf("found constexpr >:(\n");
 				didt = dictElems[++i];
 		 	 }
 
 			 if (auto *dit = dyn_cast<DIDerivedType>(didt)) {
-				 //  dit->dump();
 				 if (auto ditb = dyn_cast<DIType>(dit->getBaseType())){
-					//  printf("ditb:\n");
-					//  ditb->dump();
-					//  printf("it:\n");
-					//  (*it)->dump();
-					//  printf("recursion:\n");
 					 collectVarName(M, ptr + offset, *it, ditb,
 								nameBuilder + "." + dit->getName().str(),
 								info);
