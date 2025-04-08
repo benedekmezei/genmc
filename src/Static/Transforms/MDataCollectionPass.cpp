@@ -117,7 +117,7 @@
 				// }
 
 				// if (!(newDit->getExtraData() && hasFlagStaticMember)) break;
-				if (flags & llvm::DINode::FlagStaticMember) break;
+				if (!(flags & llvm::DINode::FlagStaticMember)) break;
 				
 
 				// this is likely a static constexpr member of a class, which wasn't compiled into typ, so we can ignore it
