@@ -35,6 +35,9 @@
  #include <llvm/IR/Module.h>
  #include <llvm/IR/Type.h>
 
+ #include <llvm/BinaryFormat/Dwarf.h>
+ #include <iostream>
+
  
  using namespace llvm;
  
@@ -98,11 +101,24 @@
 				auto newDit = dyn_cast<DIDerivedType>(didt);
 				if (!newDit) break;
 
-				// getTag() == 0x34 is "DW_TAG_variable", could drop "#include <llvm/BinaryFormat/Dwarf.h>""
-				if (newDit->getTag() != 0x34) break;
+				// constexpr class members have variable tag, extradata (with value) and have the static member flag
+				if (newDit->getTag() != llvm::dwarf::Tag::DW_TAG_variable) break;
+				if (!(newDit->getExtraData())) break;
 				
 				// constexpr has extraData and is only a problem as a class member, where it has to be static
-				if (!(newDit->getExtraData() && newDit->getFlags() & (1 << 12))) break;
+				llvm::DINode::DIFlags flags = newDit->getFlags();
+
+				// llvm::SmallVector<llvm::DINode::DIFlags> splitFlags;
+				// llvm::DINode::splitFlags(flags, splitFlags);
+				
+				// bool hasFlagStaticMember = false;
+				// for (llvm::DINode::DIFlags *it = splitFlags.begin(); it != splitFlags.end(); it++){
+				// 	if (*it == llvm::DINode::FlagStaticMember) hasFlagStaticMember = true;
+				// }
+
+				// if (!(newDit->getExtraData() && hasFlagStaticMember)) break;
+				if (flags & llvm::DINode::FlagStaticMember) break;
+				
 
 				// this is likely a static constexpr member of a class, which wasn't compiled into typ, so we can ignore it
 				didt = dictElems[++i];
