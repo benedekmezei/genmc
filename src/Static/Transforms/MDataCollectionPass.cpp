@@ -98,6 +98,7 @@
 			 auto elemSize = M.getDataLayout().getTypeAllocSize(*it);
 			 auto didt = dictElems[i];
 			 while (true){
+				if (!didt) break;
 				auto newDit = dyn_cast<DIDerivedType>(didt);
 				if (!newDit) break;
 
@@ -108,15 +109,7 @@
 				// constexpr has extraData and is only a problem as a class member, where it has to be static
 				llvm::DINode::DIFlags flags = newDit->getFlags();
 
-				// llvm::SmallVector<llvm::DINode::DIFlags> splitFlags;
-				// llvm::DINode::splitFlags(flags, splitFlags);
-				
-				// bool hasFlagStaticMember = false;
-				// for (llvm::DINode::DIFlags *it = splitFlags.begin(); it != splitFlags.end(); it++){
-				// 	if (*it == llvm::DINode::FlagStaticMember) hasFlagStaticMember = true;
-				// }
-
-				// if (!(newDit->getExtraData() && hasFlagStaticMember)) break;
+				// could also use llvm::DINode::splitFlags if bitvector implementation of llvm::DINode::DIFlags is changed
 				if (!(flags & llvm::DINode::FlagStaticMember)) break;
 				
 
