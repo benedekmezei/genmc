@@ -97,25 +97,30 @@
 		 for (auto it = ST->element_begin(); itIncCount < minSize; ++it, ++i, ++itIncCount) {
 			 auto elemSize = M.getDataLayout().getTypeAllocSize(*it);
 			 auto didt = dictElems[i];
-			 while (true){
-				if (!didt) break;
-				auto newDit = dyn_cast<DIDerivedType>(didt);
-				if (!newDit) break;
+			 
+			 // skip over constexpr class members, as they aren't compiled into llvm struct but appear in the debug data
+			while (i < dictElems.size()){
+				// constexpr class members are DIDerivedType
+				auto dit = dyn_cast<DIDerivedType>(didt);
+				if (!dit) 
+					break;
 
-				// constexpr class members have variable tag, extradata (with value) and have the static member flag
-				if (newDit->getTag() != llvm::dwarf::Tag::DW_TAG_variable) break;
-				if (!(newDit->getExtraData())) break;
+				// constexpr class members have variable tag
+				if (dit->getTag() != llvm::dwarf::Tag::DW_TAG_variable) 
+					break;
+
+				// constexpr class members have extraData
+				if (!(dit->getExtraData())) 
+					break;
 				
-				// constexpr has extraData and is only a problem as a class member, where it has to be static
-				llvm::DINode::DIFlags flags = newDit->getFlags();
+				// constexpr class members have static member flag
+				llvm::DINode::DIFlags flags = dit->getFlags();
+				if (!(flags & llvm::DINode::FlagStaticMember)) 
+					break;
 
-				// could also use llvm::DINode::splitFlags if bitvector implementation of llvm::DINode::DIFlags is changed
-				if (!(flags & llvm::DINode::FlagStaticMember)) break;
-				
-
-				// this is likely a static constexpr member of a class, which wasn't compiled into typ, so we can ignore it
+				// this is likely a constexpr member of a class so we can skip it
 				didt = dictElems[++i];
-		 	 }
+		 	}
 
 			 if (auto *dit = dyn_cast<DIDerivedType>(didt)) {
 				 if (auto ditb = dyn_cast<DIType>(dit->getBaseType())){
